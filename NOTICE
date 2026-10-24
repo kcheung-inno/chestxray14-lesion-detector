@@ -1,0 +1,22 @@
+NoduleDetect_Benchmark
+Copyright 2026 Ken Cheung
+
+This product includes software developed by third parties. See
+THIRD-PARTY-NOTICES.md for the full list and the terms that apply.
+
+SCOPE OF THE APACHE LICENSE 2.0 IN THIS REPOSITORY
+
+The Apache License 2.0 in ./LICENSE applies to the original work in this
+repository: the source code in scripts/, the demo page demo/index.html,
+the trained model weights in demo/model_nih/, and the documentation.
+
+It does NOT apply to, and the copyright holder does not purport to license:
+
+  1. The chest radiograph images (data/nih/images/ and demo/nih_images/).
+     These originate from NIH ChestX-ray14 and are redistributed under the
+     terms of that dataset, which the authors of this repository do not own
+     and cannot relicense. See DATA_LICENSE.md.
+
+  2. The onnxruntime-web binaries in demo/ort/. These are Copyright (c)
+     Microsoft Corporation and are redistributed under the MIT License.
+     See demo/ort/LICENSE and THIRD-PARTY-NOTICES.md.

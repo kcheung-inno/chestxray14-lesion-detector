@@ -1,0 +1,14 @@
+{
+  "variant": "small",
+  "epochs": 30,
+  "batch_size": 2,
+  "grad_accum_steps": 8,
+  "resolution": 576,
+  "lr": 0.0001,
+  "dataset_dir": "data/rfdetr_nih",
+  "output_dir": "outputs/rfdetr_nih",
+  "started": "2026-10-12 18:33:22",
+  "finished": "2026-10-12 19:48:05",
+  "wall_seconds": 4482.8,
+  "seconds_per_epoch": 149.4
+}

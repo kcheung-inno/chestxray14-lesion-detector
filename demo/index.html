@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>NIH ChestX-ray14 detector — live in-browser inference</title>
+<style>
+  :root { --ok:#1f7a4d; --warn:#a8650d; --bad:#b03a31; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:0; font-family:inherit; color:var(--foreground);
+         background:transparent; font-size:14.5px; line-height:1.6;
+         -webkit-font-smoothing:antialiased; }
+  .wrap { width:940px; max-width:100%; text-align:left; }
+  h1 { font-size:19px; margin:0 0 3px; font-weight:650; letter-spacing:-0.01em; line-height:1.3; }
+  .sub { color:var(--muted-foreground); font-size:13px; margin-bottom:12px; }
+  .banner { border:1px solid var(--border); border-left:4px solid var(--ok);
+            border-radius:7px; padding:11px 14px; margin-bottom:14px;
+            background:var(--card); font-size:13.5px; line-height:1.55; }
+  .banner b { color:var(--ok); font-weight:650; }
+  .grid { display:grid; grid-template-columns:240px 1fr; gap:16px; align-items:start; }
+  .thumbs { display:flex; flex-direction:column; gap:7px; max-height:580px; overflow-y:auto; padding-right:4px; }
+  .thumb { display:flex; gap:9px; align-items:center; padding:6px; border:1px solid var(--border);
+           border-radius:7px; cursor:pointer; background:var(--card); text-align:left; }
+  .thumb:hover { border-color:var(--accent); }
+  .thumb.sel { border-color:var(--accent); box-shadow:0 0 0 1.5px var(--accent) inset; }
+  .thumb img { width:58px; height:58px; object-fit:cover; border-radius:4px; background:#000; flex:none; }
+  .thumb .nm { font-size:12px; font-weight:550; font-variant-numeric:tabular-nums; word-break:break-all; }
+  .thumb .tag { font-size:11px; font-weight:600; padding:2px 7px; border-radius:4px; display:inline-block; margin-top:3px; }
+  .tag.pos { background:rgba(168,101,13,.16); color:var(--warn); border:1px solid rgba(168,101,13,.35); }
+  .tag.neg { background:rgba(31,122,77,.14); color:var(--ok); border:1px solid rgba(31,122,77,.32); }
+  /* the ONLY dark region on the page - radiology viewing convention */
+  .viewer { position:relative; background:#000; border:1px solid var(--border); border-radius:7px;
+            overflow:hidden; line-height:0; box-shadow:0 2px 10px rgba(0,0,0,.18); }
+  .viewer canvas { display:block; width:100%; height:auto; }
+  .calc { position:absolute; inset:0; display:none; flex-direction:column; gap:12px;
+          align-items:center; justify-content:center; background:rgba(0,0,0,.62);
+          color:#fff; line-height:1.45; z-index:5; }
+  .viewer.busy .calc { display:flex; }
+  .spin { width:30px; height:30px; border:3px solid rgba(255,255,255,.28);
+          border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg) } }
+  .calcText { font-size:16px; font-weight:650; }
+  .calcSub { font-size:13px; opacity:.85; font-variant-numeric:tabular-nums; }
+  .progressbar { width:220px; height:5px; border-radius:3px; background:rgba(255,255,255,.22); overflow:hidden; }
+  .progressbar > i { display:block; height:100%; width:0%; background:#fff; transition:width .2s; }
+  .viewcaption { font-size:12px; color:var(--muted-foreground); margin:7px 0 0; }
+  .legend { display:flex; gap:14px; font-size:12.5px; font-weight:550; color:var(--foreground);
+            margin:10px 0 12px; flex-wrap:wrap; align-items:center; }
+  .swatch { display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:6px; vertical-align:-1px; }
+  .controls { display:flex; gap:9px; flex-wrap:wrap; align-items:center;
+              padding:10px 0; border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+  button { font-family:inherit; font-size:13.5px; font-weight:550; padding:8px 15px; border-radius:6px;
+           cursor:pointer; border:1px solid var(--border); background:var(--card); color:var(--foreground); }
+  button:hover:not(:disabled) { border-color:var(--accent); }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); font-weight:650; }
+  button:disabled { opacity:.45; cursor:not-allowed; }
+  label.chk { display:inline-flex; align-items:center; gap:6px; font-size:13.5px; cursor:pointer; }
+  .panel { border:1px solid var(--border); border-radius:7px; background:var(--card);
+           padding:12px 14px; margin-top:12px; }
+  .panel h2 { font-size:12px; text-transform:uppercase; letter-spacing:.07em;
+              color:var(--muted-foreground); margin:0 0 9px; font-weight:700; }
+  table { width:100%; border-collapse:collapse; font-size:13.5px; font-variant-numeric:tabular-nums; }
+  th,td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--border); }
+  th { color:var(--muted-foreground); font-weight:650; font-size:12px;
+       text-transform:uppercase; letter-spacing:.04em; }
+  tbody tr:last-child td { border-bottom:none; }
+  .stat { display:inline-block; margin:0 22px 6px 0; }
+  .stat .k { color:var(--muted-foreground); font-size:12px; display:block; }
+  .stat .v { font-size:21px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1.25; }
+  .verdict.ok { color:var(--ok); font-weight:650; }
+  .verdict.miss { color:var(--bad); font-weight:650; }
+  .notes { font-size:13px; color:var(--foreground); opacity:.82; margin-top:16px; line-height:1.6; }
+  .notes b { opacity:1; font-weight:650; }
+  .notes ul { padding-left:20px; margin:8px 0 0; }
+  .notes li { margin-bottom:6px; }
+  code { font-size:12px; background:var(--card); border:1px solid var(--border); border-radius:4px; padding:1px 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>NIH ChestX-ray14 detector — running live in this page</h1>
+  <div class="sub">Held-out chest radiographs · 8-class lesion detection · real ONNX inference on your machine</div>
+
+  <div class="banner">
+    <b>Real trained model, real local inference.</b>
+    RF-DETR-S fine-tuned on the NIH ChestX-ray14 box-annotated subset (880 images, 984
+    radiologist-drawn boxes, 8 findings). NIH ChestX-ray14 carries <b>no restrictions on use</b>
+    (attribution required), so the images and weights here may be published.
+  </div>
+
+  <div class="grid">
+    <div><div class="thumbs" id="thumbs"></div></div>
+    <div>
+      <div class="viewer" id="viewer">
+        <canvas id="cv"></canvas>
+        <div class="calc" id="calc">
+          <div class="spin"></div>
+          <div class="calcText" id="calcText">Loading model…</div>
+          <div class="calcSub" id="calcSub"></div>
+        </div>
+      </div>
+      <p class="viewcaption">The dark panel is the radiology viewing area only — it is not the page theme.</p>
+      <div class="legend" id="legend"></div>
+      <div class="controls">
+        <button class="primary" id="run" disabled>Loading model…</button>
+        <button id="clear" disabled>Clear</button>
+        <label class="chk"><input type="checkbox" id="showGT" checked> show ground truth</label>
+        <label class="chk" style="gap:7px">threshold
+          <input type="range" id="thr" min="0.05" max="0.80" step="0.01" value="0.25" style="width:100px">
+          <span id="thrVal" style="font-variant-numeric:tabular-nums">0.25</span>
+        </label>
+        <span id="timing" style="font-size:11px;color:var(--muted-foreground)"></span>
+      </div>
+
+      <div class="panel">
+        <h2>Result</h2>
+        <div style="margin-bottom:6px">
+          <span class="stat"><span class="k">ground-truth boxes</span><br><span class="v" id="sGt">–</span></span>
+          <span class="stat"><span class="k">detections</span><br><span class="v" id="sPred">–</span></span>
+          <span class="stat"><span class="k">boxes matched</span><br><span class="v" id="sHit">–</span></span>
+        </div>
+        <div id="evalNote" style="font-size:11.5px;color:var(--muted-foreground)"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Detections (ranked by score)</h2>
+        <table id="tbl">
+          <thead><tr><th>#</th><th>finding</th><th>score</th><th>centre (x, y)</th><th>box (px)</th><th>matches a gold box?</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div id="noPred" style="font-size:12.5px;color:var(--muted-foreground);padding:4px 0">Waiting for analysis…</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <b>How to read this honestly.</b>
+    <ul>
+      <li>The box-annotated subset of NIH ChestX-ray14 is <b>small</b>: 880 images, 984 boxes. For
+          <b>Nodule</b> it is only 79 boxes and for <b>Mass</b> 85 — split by patient that leaves
+          <b>125 in training and 39 in validation</b>. Per-class numbers for those two findings are
+          therefore <b>high-variance</b>. Treat the numbers as a proof of concept, not a benchmark.</li>
+      <li>Training used all 8 findings together (~6× more box supervision than a nodule-only run would
+          have) with negative images included so the model can learn to reject.</li>
+      <li>“Matches a gold box” is a loose test — a detection whose centre falls inside a
+          radiologist-drawn box. It is not IoU, and detections are <b>not</b> deduplicated
+          (RF-DETR is NMS-free, so several boxes often fire on one lesion).</li>
+      <li>Single run, single seed. No confidence intervals.</li>
+      <li><b>Not a medical device.</b> Must not be used for diagnosis or screening. Research use only.</li>
+      <li><b>Attribution:</b> NIH ChestX-ray14, NIH Clinical Center. Wang X, Peng Y, Lu L, Lu Z, Bagheri M,
+          Summers RM. <i>ChestX-ray8</i>, IEEE CVPR 2017. Data: https://nihcc.app.box.com/v/ChestXray-NIHCC</li>
+    </ul>
+  </div>
+</div>
+
+<script src="./ort/ort.min.js"></script>
+<script>
+const RES = 576, MEAN = [0.485,0.456,0.406], STD = [0.229,0.224,0.225];
+// Model sources, tried in order. A local copy is used when present (serve_demo.py).
+// The HuggingFace fallback exists because a static host such as GitHub Pages caps
+// individual files at 100 MB and this graph is 122 MB. Verified: the HF CDN sends
+// access-control-allow-origin: * and honours byte ranges, and its preflight returns 200.
+const MODEL_SOURCES = [
+  './model_nih/rfdetr_nih.onnx',
+  'https://huggingface.co/kcheung-inno/nih-chestxray14-rfdetr-small/resolve/main/rfdetr_nih.onnx',
+];
+const PALETTE = ['#5cc0ff','#ffb03a','#7ee787','#ff7b72','#d2a8ff','#79c0ff','#ffa657','#56d364'];
+let MANIFEST = null, session = null, providerUsed = "?", cur = null, preds = [], gtVisible = true, imgEl = null;
+let inflight = false, wantRerun = false, gen = 0, NC = 1, NCLASSES = 8, analysed = false;
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const viewer = document.getElementById('viewer');
+
+function calc(show, text, sub, frac) {
+  viewer.classList.toggle('busy', !!show);
+  if (text !== undefined) document.getElementById('calcText').textContent = text;
+  if (sub !== undefined) document.getElementById('calcSub').textContent = sub;
+  if (frac === undefined) return;
+  const host = document.getElementById('calc');
+  let bar = host.querySelector('.progressbar');
+  if (frac === null) { if (bar) bar.remove(); return; }
+  if (!bar) { bar = document.createElement('div'); bar.className = 'progressbar'; bar.innerHTML = '<i></i>'; host.appendChild(bar); }
+  bar.firstChild.style.width = (frac * 100).toFixed(0) + '%';
+}
+const clsColor = c => PALETTE[(c - 1) % PALETTE.length];
+const clsName = c => (MANIFEST && MANIFEST.names && MANIFEST.names[c]) ? MANIFEST.names[c] : ('class ' + c);
+
+async function loadModel() {
+  const btn = document.getElementById('run');
+  // Resolve against the page, not the origin root. A hard-coded '/ort/' works when the demo
+  // is served at '/' (serve_demo.py) but 404s on any subpath deployment - e.g. GitHub Pages
+  // project sites, which serve at /<repo>/. That failure is invisible locally.
+  ort.env.wasm.wasmPaths = new URL('./ort/', document.baseURI).href;
+  btn.textContent = 'Loading model…'; btn.disabled = true;
+  calc(true, 'Loading model…', 'fetching ONNX — one time only', 0);
+  try {
+    let resp = null, lastErr = null;
+    for (const src of MODEL_SOURCES) {
+      try {
+        const r = await fetch(src);
+        if (r.ok) { resp = r; break; }
+        lastErr = new Error('HTTP ' + r.status + ' from ' + src);
+      } catch (e) { lastErr = e; }
+    }
+    if (!resp) throw lastErr || new Error('no model source reachable');
+    const total = Number(resp.headers.get('content-length')) || 0;
+    const reader = resp.body.getReader(); const chunks = []; let got = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value); got += value.length;
+      calc(true, 'Loading model…',
+           (got/1048576).toFixed(0) + ' / ' + (total ? (total/1048576).toFixed(0) : '?') + ' MB',
+           total ? got/total : undefined);
+    }
+    const buf = new Uint8Array(got); let off = 0;
+    for (const c of chunks) { buf.set(c, off); off += c.length; }
+    calc(true, 'Starting model…', 'compiling graph, a few seconds', null);
+    await new Promise(r => setTimeout(r, 80));
+    try {
+      session = await ort.InferenceSession.create(buf, { executionProviders: ['webgpu','wasm'] });
+      const eps = session.executionProviders || session.handler?.session?.executionProviders;
+      providerUsed = (eps && eps.length) ? eps.join('+') : 'webgpu/wasm';
+    } catch (e) {
+      session = await ort.InferenceSession.create(buf, { executionProviders: ['wasm'] });
+      providerUsed = 'wasm (webgpu unavailable)';
+    }
+    btn.textContent = 'Run inference'; btn.disabled = false;
+    document.getElementById('timing').textContent = 'model ready (' + providerUsed + ')';
+  } catch (e) {
+    calc(true, 'Model failed to load', e.message + ' — press Run inference to retry');
+    btn.textContent = 'Retry'; btn.disabled = false; return;
+  }
+  calc(false);
+  if (cur) await infer();
+}
+
+function preprocess(img) {
+  const off = document.createElement('canvas');
+  off.width = RES; off.height = RES;
+  const o = off.getContext('2d');
+  o.drawImage(img, 0, 0, RES, RES);
+  const d = o.getImageData(0, 0, RES, RES).data;
+  const f = new Float32Array(3 * RES * RES);
+  for (let i = 0, p = 0; i < d.length; i += 4, p++) {
+    f[p]             = (d[i]/255   - MEAN[0]) / STD[0];
+    f[RES*RES + p]   = (d[i+1]/255 - MEAN[1]) / STD[1];
+    f[2*RES*RES + p] = (d[i+2]/255 - MEAN[2]) / STD[2];
+  }
+  return new ort.Tensor('float32', f, [1, 3, RES, RES]);
+}
+const sigmoid = x => 1 / (1 + Math.exp(-x));
+
+async function infer() {
+  if (!session || !cur) return;
+  if (inflight) { wantRerun = true; return; }
+  inflight = true;
+  const myGen = gen, t0 = performance.now();
+  const btn = document.getElementById('run');
+  btn.disabled = true; btn.textContent = 'Calculating…';
+  calc(true, 'Analysing image…', 'running the detector locally · 0.0s');
+  const tick = setInterval(() => {
+    document.getElementById('calcSub').textContent =
+      'running the detector locally · ' + ((performance.now()-t0)/1000).toFixed(1) + 's';
+  }, 100);
+  await new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+
+  let err = null;
+  try {
+    const out = await session.run({ input: preprocess(imgEl) });
+    if (myGen === gen) {
+      const dets = out.dets.data, labels = out.labels.data;
+      const NQ = out.dets.dims[1];
+      NC = out.labels.dims[2];
+      // The exported graph emits one extra logit (9 for 8 classes); only the first
+      // nClasses indices are real. Verified against PyTorch: ONNX argmax index i maps to
+      // COCO category i+1 (idx 1 -> Cardiomegaly, which is category 2).
+      const NUSE = Math.min(NC, NCLASSES);
+      const thr = parseFloat(document.getElementById('thr').value);
+      preds = [];
+      for (let j = 0; j < NQ; j++) {
+        let best = -1, bestS = -1;
+        for (let c = 0; c < NUSE; c++) {                // sigmoid per class (verified)
+          const s = sigmoid(labels[j*NC + c]);
+          if (s > bestS) { bestS = s; best = c; }
+        }
+        if (bestS < thr) continue;
+        preds.push({ cx: dets[j*4]*cur.w, cy: dets[j*4+1]*cur.h,
+                     w: dets[j*4+2]*cur.w, h: dets[j*4+3]*cur.h,
+                     score: bestS, cls: best + 1 });     // COCO categories are 1-indexed
+      }
+      preds.sort((a,b) => b.score - a.score);
+      analysed = true;   // a zero-detection result is a completed analysis, not a pending one
+      document.getElementById('timing').textContent =
+        'analysed in ' + ((performance.now()-t0)/1000).toFixed(2) + ' s (' + providerUsed + ')';
+    }
+  } catch (e) { err = e; }
+  clearInterval(tick);
+  inflight = false;
+  btn.disabled = false; btn.textContent = 'Run inference';
+  calc(false);
+  if (err) { document.getElementById('timing').textContent = 'inference failed: ' + err.message; return; }
+  if (myGen === gen) { draw(); refreshStats(); renderTable(); }
+  if (wantRerun) { wantRerun = false; infer(); }
+}
+
+function draw() {
+  if (!imgEl || !cur) return;
+  cv.width = cur.w; cv.height = cur.h;
+  ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.drawImage(imgEl, 0, 0, cur.w, cur.h);
+  const lw = Math.max(2, cur.w/300), fs = Math.max(15, cur.w/48);
+  ctx.font = '600 ' + fs + 'px sans-serif';
+  function tag(text, x, y, colour) {
+    ctx.lineWidth = Math.max(3, fs/6);
+    ctx.strokeStyle = 'rgba(0,0,0,0.95)';
+    ctx.lineJoin = 'round'; ctx.miterLimit = 2;
+    ctx.strokeText(text, x, y);
+    ctx.fillStyle = colour; ctx.fillText(text, x, y);
+  }
+  if (gtVisible) {
+    ctx.setLineDash([]);
+    cur.boxes.forEach((b, i) => {
+      const col = clsColor(b.cls);
+      ctx.strokeStyle = col; ctx.lineWidth = lw;
+      ctx.strokeRect(b.x, b.y, b.w, b.h);
+      tag(b.name.slice(0, 6), b.x + 3, Math.max(fs, b.y - 6), col);
+    });
+  }
+  preds.forEach((p, i) => {
+    const col = clsColor(p.cls);
+    ctx.strokeStyle = col; ctx.lineWidth = lw;
+    ctx.setLineDash([lw*2.2, lw*1.6]);
+    ctx.strokeRect(p.cx - p.w/2, p.cy - p.h/2, p.w, p.h);
+    ctx.setLineDash([]);
+    tag(p.score.toFixed(2), p.cx - p.w/2 + 3,
+        Math.min(cur.h - 6, p.cy + p.h/2 + fs + (i % 4) * fs * 1.08), col);
+  });
+}
+function overlaps(p, b) {
+  return p.cx >= b.x && p.cx <= b.x + b.w && p.cy >= b.y && p.cy <= b.y + b.h;
+}
+function refreshStats() {
+  document.getElementById('sGt').textContent = cur ? cur.boxes.length : '–';
+  document.getElementById('sPred').textContent = cur ? preds.length : '–';
+  if (!preds.length) { document.getElementById('sHit').textContent = '–'; return; }
+  const hit = cur.boxes.filter(b => preds.some(p => overlaps(p,b))).length;
+  document.getElementById('sHit').textContent = hit + '/' + cur.boxes.length;
+}
+function renderTable() {
+  const tb = document.querySelector('#tbl tbody');
+  tb.innerHTML = '';
+  // "Waiting for analysis…" must not persist after a run that legitimately found nothing
+  // (0 detections is a real result here, not an unfinished state).
+  const np = document.getElementById('noPred');
+  if (preds.length) {
+    np.style.display = 'none';
+  } else {
+    np.style.display = 'block';
+    np.textContent = analysed
+      ? 'Analysis complete — no detections above the current threshold. '
+        + 'Lower the threshold to reveal weaker candidate boxes.'
+      : 'Waiting for analysis…';
+  }
+  preds.forEach((p, i) => {
+    const m = cur.boxes.findIndex(b => overlaps(p,b));
+    const sameClass = m >= 0 && cur.boxes[m].cls === p.cls;
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td>' + (i+1) + '</td>' +
+      '<td><span class="swatch" style="background:' + clsColor(p.cls) + '"></span>' + clsName(p.cls) + '</td>' +
+      '<td>' + p.score.toFixed(3) + '</td>' +
+      '<td>' + p.cx.toFixed(0) + ', ' + p.cy.toFixed(0) + '</td>' +
+      '<td>' + p.w.toFixed(0) + '×' + p.h.toFixed(0) + '</td>' +
+      '<td class="verdict ' + (sameClass?'ok':'miss') + '">' +
+      (m >= 0 ? ('yes — ' + cur.boxes[m].name + (sameClass ? '' : ' (different class)')) : 'no') + '</td>';
+    tb.appendChild(tr);
+  });
+}
+function select(i) {
+  gen++;
+  cur = MANIFEST.images[i];
+  preds = [];
+  analysed = false;                       // reset on new image: analysis is pending again
+  document.getElementById('clear').disabled = true;
+  document.getElementById('timing').textContent = session ? 'loading image…' : '';
+  imgEl = new Image();
+  imgEl.onload = () => {
+    // take dimensions from the decoded image itself - the manifest does not carry them,
+    // and relying on it produced NaN coordinates
+    cur.w = imgEl.naturalWidth;
+    cur.h = imgEl.naturalHeight;
+    draw(); refreshStats(); renderTable();
+    document.getElementById('evalNote').textContent = cur.positive
+      ? 'Held-out image with ' + cur.boxes.length + ' radiologist-drawn box(es): ' +
+        Array.from(new Set(cur.boxes.map(b => b.name))).join(', ') + '.'
+      : 'Held-out image with no annotated boxes — any detection here is a false positive.';
+    if (session) infer();
+    else calc(true, 'Model not ready yet', 'waiting for the ONNX graph to finish loading');
+  };
+  imgEl.src = './nih_images/' + cur.file;
+  document.querySelectorAll('.thumb').forEach((t,k) => t.classList.toggle('sel', k===i));
+}
+(async function init() {
+  MANIFEST = await (await fetch('./nih_manifest.json')).json();
+  NCLASSES = Object.keys(MANIFEST.names || {}).length || 8;
+  const legend = document.getElementById('legend');
+  legend.innerHTML =
+    '<span><span class="swatch" style="background:#ffb03a"></span>ground truth (radiologist box)</span>' +
+    '<span><span class="swatch" style="background:#5cc0ff"></span>model detection</span>' +
+    '<span id="legendScore" style="color:var(--muted-foreground);font-weight:400"></span>';
+  const thumbs = document.getElementById('thumbs');
+  MANIFEST.images.forEach((im, i) => {
+    const names = Array.from(new Set(im.boxes.map(b => b.name)));
+    const d = document.createElement('div');
+    d.className = 'thumb';
+    d.innerHTML = '<img src="./nih_images/' + im.file + '" alt=""><div class="meta">' +
+      '<div class="nm">' + im.file.slice(0,10) + '…</div>' +
+      '<span class="tag ' + (im.positive?'pos':'neg') + '">' +
+      (im.positive ? names.join(', ') : 'no boxes') + '</span></div>';
+    d.onclick = () => select(i);
+    thumbs.appendChild(d);
+  });
+  // deep link: ?img=N selects a specific held-out image (0-based, clamped).
+  // Makes the demo verifiable by URL instead of requiring manual clicks.
+  const q = new URLSearchParams(location.search).get('img');
+  const start = q === null ? 0
+    : Math.max(0, Math.min(MANIFEST.images.length - 1, parseInt(q, 10) || 0));
+  select(start);
+  await loadModel();
+})();
+document.getElementById('run').onclick = infer;
+document.getElementById('clear').onclick = () => {
+  preds = []; draw(); refreshStats(); renderTable();
+  document.getElementById('clear').disabled = true;
+};
+document.getElementById('showGT').onchange = e => { gtVisible = e.target.checked; draw(); };
+document.getElementById('thr').oninput = e => {
+  document.getElementById('thrVal').textContent = parseFloat(e.target.value).toFixed(2);
+};
+document.getElementById('thr').onchange = () => { if (session && cur) infer(); };
+</script>
+</body>
+</html>

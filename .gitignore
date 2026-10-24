@@ -1,0 +1,80 @@
+# ---------------------------------------------------------------------------
+# Environments, caches, build output
+# ---------------------------------------------------------------------------
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+.pytest_cache/
+node_modules/
+
+# ---------------------------------------------------------------------------
+# Model weights - large binaries.
+# NOTE: the NIH ONNX is publishable but ~122 MB, which is past GitHub's comfort
+# threshold, so it ships via the HuggingFace model repo instead. The demo looks
+# for it at demo/model_nih/rfdetr_nih.onnx - place it there to run locally.
+# ---------------------------------------------------------------------------
+*.pth
+*.ckpt
+*.onnx
+*.safetensors
+merged/
+gguf/
+output/checkpoint-*/
+
+# ---------------------------------------------------------------------------
+# Downloaded corpora and caches (regenerable - see scripts/)
+# ---------------------------------------------------------------------------
+# The 1,780 training images (~1.3 GB). Regenerable via scripts/prep_nih.py +
+# scripts/nih_download.py, and Git does not preserve the hardlinks that make the
+# derived layouts free on disk, so a clone would materialise ~2.6 GB.
+# NOT republished anywhere - the provider offers them freely, so you fetch your own
+# copy with scripts/nih_list_files.py + prep_nih.py + nih_download.py. See README.
+data/nih/images/
+
+# Images inside the derived RF-DETR (Roboflow) layout - hardlinks of data/nih/images/,
+# so they cost nothing locally but would each become a real file in a clone.
+# The _annotations.coco.json beside them IS kept: small, and derived from the CSVs.
+# Regenerate the whole layout with scripts/build_nih_coco.py.
+data/rfdetr_nih/*/*.png
+
+# Download cache for the HF mirror used to fetch images; large and reproducible.
+data/nih/_hf/
+# Full filename -> path index of the 100k-file mirror; regenerable in ~1 min.
+data/nih/file_index.json
+hf/
+.hfhome/
+
+# ---------------------------------------------------------------------------
+# Logs and scratch output
+# ---------------------------------------------------------------------------
+*.log
+data/*.log
+*.tmp
+
+# ---------------------------------------------------------------------------
+# Third-party clones (re-clone via the URLs in README)
+# ---------------------------------------------------------------------------
+third_party/
+
+# ---------------------------------------------------------------------------
+# Secrets - never commit a token.
+# HF_TOKEN belongs in the shell environment, not in a file in this repo.
+# ---------------------------------------------------------------------------
+.env
+.env.*
+*.pem
+id_rsa*
+!id_rsa.pub
+
+# ---------------------------------------------------------------------------
+# OS / editor
+# ---------------------------------------------------------------------------
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
+*.swp

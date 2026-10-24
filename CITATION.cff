@@ -1,0 +1,46 @@
+cff-version: 1.2.0
+message: "If you use this software or these model weights, please cite the source dataset as well."
+title: "Chest X-ray lesion detection (NIH ChestX-ray14)"
+abstract: >-
+  RF-DETR-S and D-FINE-S fine-tuned for 8-class lesion localisation on chest radiographs,
+  trained on the box-annotated subset of NIH ChestX-ray14, with an in-browser demo that runs
+  the exported ONNX locally via onnxruntime-web. Research use only - not a medical device.
+version: "1.0.0"
+date-released: "2026-10-24"
+license: Apache-2.0
+repository-code: "https://github.com/kcheung-inno/chestxray14-lesion-detector"
+url: "https://kcheung-inno.github.io/chestxray14-lesion-detector/"
+authors:
+  - family-names: "Cheung"
+    given-names: "Ken"
+keywords:
+  - chest radiograph
+  - object detection
+  - medical imaging
+  - nodule
+  - NIH ChestX-ray14
+  - RF-DETR
+  - ONNX
+preferred-citation:
+  type: conference-paper
+  title: >-
+    ChestX-ray8: Hospital-scale Chest X-ray Database and Benchmarks on Weakly-Supervised
+    Classification and Localization of Common Thorax Diseases
+  authors:
+    - family-names: "Wang"
+      given-names: "Xiaosong"
+    - family-names: "Peng"
+      given-names: "Yifan"
+    - family-names: "Lu"
+      given-names: "Le"
+    - family-names: "Lu"
+      given-names: "Zhiyong"
+    - family-names: "Bagheri"
+      given-names: "Mohammadhadi"
+    - family-names: "Summers"
+      given-names: "Ronald M."
+  collection-title: "2017 IEEE Conference on Computer Vision and Pattern Recognition (CVPR)"
+  start: 3462
+  end: 3471
+  year: 2017
+  doi: "10.1109/CVPR.2017.369"

@@ -1,0 +1,172 @@
+{
+  "model": "RF-DETR-S trained on NIH ChestX-ray14 (8-class lesion detection)",
+  "dataset": "NIH ChestX-ray14 box-annotated subset (BBox_List_2017)",
+  "licence": "NIH ChestX-ray14: no restrictions on use; attribution required (NIH Clinical Center; Wang et al., CVPR 2017; https://nihcc.app.box.com/v/ChestXray-NIHCC)",
+  "split": "val (held out; split by patient)",
+  "classes": {
+    "Atelectasis": 1,
+    "Cardiomegaly": 2,
+    "Effusion": 3,
+    "Infiltrate": 4,
+    "Mass": 5,
+    "Nodule": 6,
+    "Pneumonia": 7,
+    "Pneumothorax": 8
+  },
+  "names": {
+    "1": "Atelectasis",
+    "2": "Cardiomegaly",
+    "3": "Effusion",
+    "4": "Infiltrate",
+    "5": "Mass",
+    "6": "Nodule",
+    "7": "Pneumonia",
+    "8": "Pneumothorax"
+  },
+  "images": [
+    {
+      "file": "00001534_005.png",
+      "positive": true,
+      "boxes": [
+        {
+          "cls": 2,
+          "name": "Cardiomegaly",
+          "x": 396.6,
+          "y": 342.4,
+          "w": 490.9,
+          "h": 381.4
+        }
+      ]
+    },
+    {
+      "file": "00002435_005.png",
+      "positive": true,
+      "boxes": [
+        {
+          "cls": 2,
+          "name": "Cardiomegaly",
+          "x": 362.8,
+          "y": 480.3,
+          "w": 401.4,
+          "h": 298.3
+        }
+      ]
+    },
+    {
+      "file": "00002763_031.png",
+      "positive": true,
+      "boxes": [
+        {
+          "cls": 2,
+          "name": "Cardiomegaly",
+          "x": 403.0,
+          "y": 355.5,
+          "w": 476.2,
+          "h": 387.3
+        }
+      ]
+    },
+    {
+      "file": "00000902_001.png",
+      "positive": true,
+      "boxes": [
+        {
+          "cls": 5,
+          "name": "Mass",
+          "x": 351.1,
+          "y": 635.0,
+          "w": 88.9,
+          "h": 84.5
+        }
+      ]
+    },
+    {
+      "file": "00003440_000.png",
+      "positive": true,
+      "boxes": [
+        {
+          "cls": 1,
+          "name": "Atelectasis",
+          "x": 217.8,
+          "y": 254.6,
+          "w": 123.5,
+          "h": 80.2
+        },
+        {
+          "cls": 5,
+          "name": "Mass",
+          "x": 591.6,
+          "y": 457.3,
+          "w": 114.9,
+          "h": 113.8
+        }
+      ]
+    },
+    {
+      "file": "00001555_002.png",
+      "positive": true,
+      "boxes": [
+        {
+          "cls": 6,
+          "name": "Nodule",
+          "x": 614.4,
+          "y": 808.4,
+          "w": 74.8,
+          "h": 75.9
+        }
+      ]
+    },
+    {
+      "file": "00002290_001.png",
+      "positive": true,
+      "boxes": [
+        {
+          "cls": 6,
+          "name": "Nodule",
+          "x": 260.1,
+          "y": 717.3,
+          "w": 63.9,
+          "h": 47.7
+        }
+      ]
+    },
+    {
+      "file": "00003948_001.png",
+      "positive": true,
+      "boxes": [
+        {
+          "cls": 6,
+          "name": "Nodule",
+          "x": 281.7,
+          "y": 305.6,
+          "w": 102.9,
+          "h": 127.9
+        }
+      ]
+    },
+    {
+      "file": "00001946_029.png",
+      "positive": true,
+      "boxes": [
+        {
+          "cls": 8,
+          "name": "Pneumothorax",
+          "x": 289.6,
+          "y": 396.3,
+          "w": 72.8,
+          "h": 154.7
+        }
+      ]
+    },
+    {
+      "file": "00012175_002.png",
+      "positive": false,
+      "boxes": []
+    },
+    {
+      "file": "00003893_001.png",
+      "positive": false,
+      "boxes": []
+    }
+  ]
+}
